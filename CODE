@@ -65,8 +65,9 @@ plot(loss_vals, type = "l", col = "blue", lwd = 2,
      xlab = "Iteration", ylab = "Loss",
      main = "Convergence of Gradient Descent (Linear Regression)”)
 
-                                                        Final beta: 1.853088 2.917036
-                                                        Number of iterations: 2562 
+
+
+
  
 
 ##PROBLEM 2
@@ -142,6 +143,8 @@ ggplot(loss_df, aes(x = Iteration, y = Loss)) +
 
 
 
+
+
 ##PROBLEM 3
 # Define A, b
 A <- matrix(c(2, 0, 0, 4), nrow = 2)
@@ -206,6 +209,8 @@ x_vals <- sapply(res_quad$history, function(h) h$x[1])
 y_vals <- sapply(res_quad$history, function(h) h$x[2])
 plot(x_vals, y_vals, type = "o", pch = 19, col = "darkgreen",
      xlab = "x[1]", ylab = "x[2]", main = "Descent Path")
+
+
 
 
 
