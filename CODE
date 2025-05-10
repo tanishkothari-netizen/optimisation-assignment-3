@@ -1,0 +1,368 @@
+##PROBLEM 1
+
+set.seed(123)  # For reproducibility
+
+# Generate data
+n <- 100
+x1 <- rnorm(n, mean = 1, sd = sqrt(2))  # x ~ N(1, 2)
+X <- cbind(1, x1)  # Add intercept term
+beta_true <- c(2, 3)
+y <- rnorm(n, mean = X %*% beta_true, sd = sqrt(5))  # y ~ N(2 + 3x, 5)
+
+# Define the loss function for linear regression
+f1 <- function(beta) {
+  preds <- X %*% beta
+  loss <- sum((y - preds)^2) / (2 * n)
+  return(loss)
+}
+
+# Define the gradient of the loss function
+grad_f1 <- function(beta) {
+  preds <- X %*% beta
+  grad <- -t(X) %*% (y - preds) / n
+  return(as.vector(grad))
+}
+
+# Gradient descent function (already provided)
+gradient_descent <- function(f, grad_f, init, eta, epsilon, max_iter = 10000, verbose = TRUE) {
+  x <- init
+  history <- list()
+  
+  for (i in 1:max_iter) {
+    grad <- grad_f(x)
+    norm_grad <- sqrt(sum(grad^2))
+    history[[i]] <- list(x = x, loss = f(x), grad_norm = norm_grad)
+    
+    if (norm_grad < epsilon) {
+      if (verbose) cat("Converged in", i, "iterations\n")
+      break
+    }
+    
+    x <- x - eta * grad
+  }
+  
+  if (i == max_iter && verbose) cat("Reached max iterations:", max_iter, "\n")
+  
+  return(list(
+    x = x,
+    history = history,
+    iterations = i,
+    final_loss = f(x),
+    final_grad_norm = sqrt(sum(grad_f(x)^2))
+  ))
+}
+
+# Run gradient descent
+res1 <- gradient_descent(f1, grad_f1, init = c(0, 0), eta = 0.01, epsilon = 1e-6)
+
+# Output results
+cat("Final beta:", res1$x, "\n")
+cat("Number of iterations:", res1$iterations, "\n")
+
+# Plot convergence
+loss_vals <- sapply(res1$history, function(h) h$loss)
+plot(loss_vals, type = "l", col = "blue", lwd = 2,
+     xlab = "Iteration", ylab = "Loss",
+     main = "Convergence of Gradient Descent (Linear Regression)”)
+
+                                                        Final beta: 1.853088 2.917036
+                                                        Number of iterations: 2562 
+ 
+
+##PROBLEM 2
+
+# Load necessary libraries
+library(ggplot2)
+
+# Sigmoid function
+sigmoid <- function(z) {
+    1 / (1 + exp(-z))
+}
+
+# Gradient of the negative log-likelihood
+compute_gradient <- function(X, y, beta) {
+    z <- X %*% beta
+    probs <- sigmoid(z)
+    gradient <- t(X) %*% (probs - y)
+    return(gradient)
+}
+
+# Negative log-likelihood loss
+compute_loss <- function(X, y, beta) {
+    z <- X %*% beta
+    probs <- sigmoid(z)
+    # To prevent log(0), clip probabilities
+    probs <- pmin(pmax(probs, 1e-15), 1 - 1e-15)
+    loss <- -sum(y * log(probs) + (1 - y) * log(1 - probs))
+    return(loss)
+}
+
+# Gradient descent function
+gradient_descent <- function(X, y, beta_init, eta = 0.05, epsilon = 1e-5, max_iter = 10000) {
+    beta <- beta_init
+    loss_history <- numeric()
+    for (i in 1:max_iter) {
+        gradient <- compute_gradient(X, y, beta)
+        beta <- beta - eta * gradient
+        loss <- compute_loss(X, y, beta)
+        loss_history[i] <- loss
+        if (sqrt(sum(gradient^2)) < epsilon) {
+            break
+        }
+    }
+    return(list(beta = beta, iterations = i, loss_history = loss_history))
+}
+
+# Load data from the provided Google Sheets link
+# Note: Replace 'your_data.csv' with the actual path to your downloaded CSV file
+# The CSV should have columns: x1, x2, y
+data <- synthetic_data_problem_2
+
+# Prepare feature matrix X and label vector y
+X <- as.matrix(cbind(1, data$x1, data$x2))  # Add intercept term
+y <- as.matrix(data$y)
+
+# Initialize beta
+beta_init <- matrix(c(0, 0, 0), nrow = 3)
+
+# Run gradient descent
+res <- gradient_descent(X, y, beta_init, eta = 0.05, epsilon = 1e-5)
+
+# Output results
+cat("Final beta:", res$beta, "\n")
+cat("Number of iterations:", res$iterations, "\n")
+
+# Plot loss vs. iterations
+loss_df <- data.frame(Iteration = 1:length(res$loss_history), Loss = res$loss_history)
+ggplot(loss_df, aes(x = Iteration, y = Loss)) +
+    geom_line(color = "blue") +
+    labs(title = "Loss vs. Iterations (Logistic Regression Negative Log-Likelihood)", x = "Iteration", y = "Loss") +
+    theme_minimal()
+
+
+
+
+##PROBLEM 3
+# Define A, b
+A <- matrix(c(2, 0, 0, 4), nrow = 2)
+b <- c(-4, -8)
+
+# Objective function
+f_quad <- function(x) {
+  return(as.numeric(t(x) %*% A %*% x + t(b) %*% x))
+}
+
+# Gradient
+grad_f_quad <- function(x) {
+  return(2 * A %*% x + b)
+}
+
+# Gradient Descent
+gradient_descent_quad <- function(f, grad_f, x0, eta, epsilon, max_iter = 10000) {
+  x <- x0
+  history <- list()
+  
+  for (i in 1:max_iter) {
+    grad <- grad_f(x)
+    grad_norm <- sqrt(sum(grad^2))
+    
+    history[[i]] <- list(x = x, loss = f(x), grad_norm = grad_norm)
+    
+    if (grad_norm < epsilon) {
+      cat("Converged in", i, "iterations\n")
+      break
+    }
+    
+    x <- x - eta * grad
+  }
+  
+  if (i == max_iter) {
+    cat("Reached max iterations:", max_iter, "\n")
+  }
+  
+  return(list(x = x, history = history, iterations = i))
+}
+
+# Parameters
+x0 <- c(1, 1)
+eta <- 0.1
+epsilon <- 1e-6
+
+# Run Gradient Descent
+res_quad <- gradient_descent_quad(f_quad, grad_f_quad, x0, eta, epsilon)
+
+# Results
+cat("Final x:\n"); print(res_quad$x)
+cat("Number of iterations:", res_quad$iterations, "\n")
+
+# Plot: Loss vs Iteration
+loss_vals <- sapply(res_quad$history, function(h) h$loss)
+plot(loss_vals, type = "l", col = "blue", lwd = 2,
+     xlab = "Iteration", ylab = "Loss",
+     main = "Loss vs Iteration (Quadratic Convex Function)")
+
+# Optional: Descent Path Plot
+x_vals <- sapply(res_quad$history, function(h) h$x[1])
+y_vals <- sapply(res_quad$history, function(h) h$x[2])
+plot(x_vals, y_vals, type = "o", pch = 19, col = "darkgreen",
+     xlab = "x[1]", ylab = "x[2]", main = "Descent Path")
+
+
+
+## PROBLEM 4
+
+# Load necessary library
+library(readr)
+
+# URL to the CSV export of the Google Sheet
+data_url <- "https://docs.google.com/spreadsheets/d/13CmIStaYtiQqR_dhBPrkHJINvVln9cepHypNinVQT3c/export?format=csv&gid=2023320122"
+
+# Read the data
+data <- read_csv(data_url)
+
+# Extract the numeric vector (assuming the data is in the first column)
+x <- data[[1]]
+
+# Negative Log-Likelihood Function
+nll <- function(params, x) {
+  mu <- params[1]
+  sigma <- params[2]
+  if (sigma <= 0) return(Inf)  # Ensure sigma is positive
+  n <- length(x)
+  return(sum(log(sigma) + ((x - mu)^2) / (2 * sigma^2)))
+}
+
+# Gradient of the Negative Log-Likelihood
+grad_nll <- function(params, x) {
+  mu <- params[1]
+  sigma <- params[2]
+  if (sigma <= 0) return(c(NA, NA))  # Gradient undefined for non-positive sigma
+  n <- length(x)
+  d_mu <- sum((mu - x) / (sigma^2))
+  d_sigma <- sum(1 / sigma - ((x - mu)^2) / (sigma^3))
+  return(c(d_mu, d_sigma))
+}
+
+# Gradient Descent Function
+gradient_descent <- function(f, grad_f, init_params, x, eta, epsilon, max_iter = 10000) {
+  params <- init_params
+  history <- list()
+  
+  for (i in 1:max_iter) {
+    grad <- grad_f(params, x)
+    if (any(is.na(grad))) {
+      cat("Encountered invalid gradient. Stopping.\n")
+      break
+    }
+    grad_norm <- sqrt(sum(grad^2))
+    history[[i]] <- list(params = params, loss = f(params, x), grad_norm = grad_norm)
+    
+    if (grad_norm < epsilon) {
+      cat("Converged in", i, "iterations\n")
+      break
+    }
+    
+    params <- params - eta * grad
+  }
+  
+  if (i == max_iter) cat("Reached maximum iterations:", max_iter, "\n")
+  
+  return(list(
+    params = params,
+    history = history,
+    iterations = i,
+    final_loss = f(params, x),
+    final_grad_norm = sqrt(sum(grad_f(params, x)^2))
+  ))
+}
+
+# Initial parameters
+init_params <- c(mu = 0, sigma = 1)
+eta <- 0.01
+epsilon <- 1e-5
+
+# Run Gradient Descent
+result <- gradient_descent(nll, grad_nll, init_params, x, eta, epsilon)
+
+# Output results
+cat("Final mu:", result$params[1], "\n")
+cat("Final sigma:", result$params[2], "\n")
+cat("Number of iterations:", result$iterations, "\n")
+
+# Extract loss values
+loss_values <- sapply(result$history, function(h) h$loss)
+
+# Plot Loss vs. Iterations
+plot(loss_values, type = "l", col = "blue", lwd = 2,
+     xlab = "Iteration", ylab = "Negative Log-Likelihood",
+     main = "Convergence of Gradient Descent (Negative Log-Likelihood)")
+
+
+
+
+##PROBLEM 5
+
+# Rosenbrock Function and its Gradient
+rosenbrock <- function(x, y) {
+  return((1 - x)^2 + 100 * (y - x^2)^2)
+}
+
+grad_rosenbrock <- function(x, y) {
+  grad_x = -2 * (1 - x) - 400 * x * (y - x^2)
+  grad_y = 200 * (y - x^2)
+  return(c(grad_x, grad_y))
+}
+
+# Gradient Descent Function
+gradient_descent_rosenbrock <- function(f, grad_f, init, eta, epsilon, max_iter = 100000) {
+  x <- init[1]
+  y <- init[2]
+  history <- list()
+  
+  for (i in 1:max_iter) {
+    grad <- grad_f(x, y)
+    grad_x <- grad[1]
+    grad_y <- grad[2]
+    
+    # Compute the gradient norm
+    norm_grad <- sqrt(grad_x^2 + grad_y^2)
+    
+    # Store history for plotting
+    history[[i]] <- list(x = x, y = y, loss = f(x, y), grad_norm = norm_grad)
+    
+    # Stop if gradient norm is below the threshold
+    if (norm_grad < epsilon) {
+      cat("Converged in", i, "iterations\n")
+      break
+    }
+    
+    # Update parameters
+    x <- x - eta * grad_x
+    y <- y - eta * grad_y
+  }
+  
+  if (i == max_iter) {
+    cat("Reached max iterations:", max_iter, "\n")
+  }
+  
+  return(list(x = x, y = y, history = history, iterations = i))
+}
+
+# Parameters
+init_point <- c(-1, 1)
+eta <- 0.001
+epsilon <- 1e-6
+
+# Run Gradient Descent
+res_rosenbrock <- gradient_descent_rosenbrock(rosenbrock, grad_rosenbrock, init = init_point, eta = eta, epsilon = epsilon)
+
+# Output results
+cat("Final x:", res_rosenbrock$x, "\n")
+cat("Final y:", res_rosenbrock$y, "\n")
+cat("Number of iterations:", res_rosenbrock$iterations, "\n")
+
+# Plot Loss vs Iterations
+loss_vals <- sapply(res_rosenbrock$history, function(h) h$loss)
+plot(loss_vals, type = "l", col = "red", lwd = 2,
+     xlab = "Iteration", ylab = "Loss",
+     main = "Convergence of Gradient Descent (Rosenbrock Function) ")
