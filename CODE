@@ -60,11 +60,9 @@ cat("Final beta:", res1$x, "\n")
 cat("Number of iterations:", res1$iterations, "\n")
 
 # Plot convergence
-loss_vals <- sapply(res1$history, function(h) h$loss)
 plot(loss_vals, type = "l", col = "blue", lwd = 2,
      xlab = "Iteration", ylab = "Loss",
-     main = "Convergence of Gradient Descent (Linear Regression)”)
-
+     main = "Convergence of Gradient Descent (Linear Regression)")
 
 
 
